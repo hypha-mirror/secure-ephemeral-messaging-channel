@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/beakerbrowser/dat-ephemeral-ext-msg.git"
+    "url": "git+https://source.ind.ie/hypha/ephemeral-messaging-channel.git"
   },
   "keywords": [
     "dat",

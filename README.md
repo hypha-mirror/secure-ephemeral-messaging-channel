@@ -1,45 +1,59 @@
-# dat-ephemeral-ext-msg
+# @hypha/ephemeral-messaging-channel
 
-Methods for implementing ephemeral messages as extension messages over Dat. [Read the spec here.](./spec.md)
+__WIP: DO NOT USE__
+
+Adds a symmetrically-encrypted and authenticated messaging channel between nodes for the same database (hypercore, hyperdb, or hyperdrive). Currently used in Hypha to provide a secure ephemeral messaging channel between nodes owned by the same person for the purpose of authorising new nodes.
+
+Based on from [dat-ephemeral-ext-msg](https://github.com/beakerbrowser/dat-ephemeral-ext-msg) by [Paul Frazee](https://pfrazee.hashbase.io/).
 
 ```js
-const {DatEphemeralExtMsg} = require('@beaker/dat-ephemeral-ext-msg')
-var datEphemeralExtMsg = new DatEphemeralExtMsg()
+const { EphemeralMessagingChannel } = require('@hypha/ephemeral-messaging-channel')
 
-/**
- * Step 1. Register the 'ephemeral' extension in the protocol streams
- */
-var mySwarm = discoverySwarm(swarmDefaults({
-  stream (info) {
-    // add to the the protocol stream
-    var stream = hypercoreProtocol({
-      extensions: ['ephemeral']
-    })
-    // ...
-    return streams
-  }
-}))
+// Create the channel, passing in the global signing secret key.
+// (The channel will derive a separate secret key from it to use for symetric encryption.)
+const ephemeralMessagingChannel = new EphemeralMessagingChannel(secretKey)
 
-/**
- * Step 2. Wire up each dat you create
- */
-datEphemeralExtMsg.watchDat(database) // can pass a hypercore, hyperdb, or hyperdrive reference as the database
-// datEphemeralExtMsg.unwatchDat(database) when done
+// Create a database (hypercore, hyperdb, or hyperdrive instance)
+const db = hyperdb(filename => ram(filename))
 
-/**
- * Step 3. Listen to events
- */
-datEphemeralExtMsg.on('message', (database, peer, {contentType, payload}) => {
+//
+// Create your event handlers.
+//
+ephemeralMessagingChannel.on('message', (database, peer, messageObject) => {
   // `peer` has sent `payload` of mimetype `contentType` for `database`
 })
-datEphemeralExtMsg.on('received-bad-message', (err, database, peer, messageBuffer) => {
+
+ephemeralMessagingChannel.on('received-bad-message', (err, database, peer, messageBuffer) => {
   // there was an error parsing a received message
 })
 
-/**
- * Step 4. Use the API
- */
+
+// Add the database to the ephemeral messaging channel.
+ephemeralMessagingChannel.addDatabase(db)
+
+// Register the ‘encrypted-ephemeral’ extension in your replication streams.
+const webSwarm = swarm(signalhub(discoveryKey, ['https://localhost:444']))
+webSwarm.on('peer', function (remoteWebStream) {
+
+  // Create the local replication stream.
+  const localReplicationStream = db.replicate({
+    live: true,
+    extensions: ['encrypted-ephemeral']
+  })
+
+  // Start replicating.
+  pump(
+    remoteWebStream,
+    localReplicationStream,
+    remoteWebStream,
+    (error) => {
+      console.log(`[WebRTC] Pipe closed for ${model.keys.nodeReadKeyInHex}`, error && error.message)
+    }
+  )
+})
+
+// Use the API
 datEphemeralExtMsg.hasSupport(database, peerId)
-datEphemeralExtMsg.broadcast(database, {contentType, payload})
-datEphemeralExtMsg.send(database, peerId, {contentType, payload})
+datEphemeralExtMsg.broadcast(database, messageObject)
+datEphemeralExtMsg.send(database, peerId, messageObject)
 ```

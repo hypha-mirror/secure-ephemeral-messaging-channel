@@ -1,7 +1,7 @@
 {
-  "name": "@beaker/dat-ephemeral-ext-msg",
+  "name": "@hypha/ephemeral-messaging-channel",
   "version": "1.0.2",
-  "description": "Methods for implementing DEP-0000: Ephemeral Messages (Extension Message)",
+  "description": "Symmetrically-encrypted ephemeral messaging channel over hypercore protocol for hypercore, hyperdb, and hyperdrive.",
   "main": "index.js",
   "scripts": {
     "test": "tape test/*.js",
@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "hypercore": "^6.24.0",
-    "hyperdb": "github:aral/hyperdb#local-options",
+    "hyperdb": "^3.5.0",
     "hyperdrive": "^9.14.2",
     "protocol-buffers": "^4.0.4",
     "random-access-memory": "^3.0.0",

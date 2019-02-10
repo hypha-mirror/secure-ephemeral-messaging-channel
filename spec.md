@@ -31,7 +31,7 @@ message SecureEphemeralMessage {
 }
 ```
 
-There is no dictated structure for the plaintext message.
+There is no dictated structure for the plaintext message but it is expected to be a JavaScript object.
 
 The message is encrypted using the `secretbox_easy` function from the _sodium-universal_ package. This currently uses the XSalsa20 stream cipher for encryption and a Poly1305 MAC for authentication.
 

@@ -2,7 +2,9 @@
 
 Adds a symmetrically-encrypted authenticated messaging channel between nodes for the same database ([hypercore](https://github.com/mafintosh/hypercore), [hyperdb](https://github.com/mafintosh/hyperdb), or [hyperdrive](https://github.com/mafintosh/hyperdrive)). Currently used in Hypha to provide a secure ephemeral messaging channel between nodes owned by the same person for the purpose of authorising new nodes.
 
-Based on [dat-ephemeral-ext-msg](https://github.com/beakerbrowser/dat-ephemeral-ext-msg) by [Paul Frazee](https://pfrazee.hashbase.io/).
+Messages are encrypted using the `secretbox_easy` function from the _sodium-universal_ package. This currently uses the XSalsa20 stream cipher for encryption and a Poly1305 MAC for authentication.
+
+This module is based on [dat-ephemeral-ext-msg](https://github.com/beakerbrowser/dat-ephemeral-ext-msg) by [Paul Frazee](https://pfrazee.hashbase.io/).
 
 ## Setup
 
@@ -10,7 +12,7 @@ If you update the _schema.proto_, you must run `npm run protobuf` to generate th
 
 ## Spec
 
-[A spec](spec.md) based on Dep-0000 is available. This has not been submitted anywhere yet.
+[A spec](spec.md) based on [Dep-0000](https://github.com/beakerbrowser/dat-ephemeral-ext-msg/blob/master/spec.md) is available. The spec has not been submitted to the Dat working group yet.
 
 ## Usage
 
@@ -18,7 +20,7 @@ If you update the _schema.proto_, you must run `npm run protobuf` to generate th
 const { SecureEphemeralMessagingChannel } = require('@hypha/secure-ephemeral-messaging-channel')
 
 // Create the channel, passing in the global signing secret key.
-// (The channel will derive a separate secret key from it to use for symetric encryption.)
+// (In Hypha, this is deterministically derived from the owner’s passphrase.)
 const secureEphemeralMessagingChannel = new SecureEphemeralMessagingChannel(secretKey)
 
 // Create a database (hypercore, hyperdb, or hyperdrive instance)

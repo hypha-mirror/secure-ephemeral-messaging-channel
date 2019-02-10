@@ -5,7 +5,7 @@ const sodium = require('sodium-universal')
 // exported api
 // =
 
-class EphemeralMessagingChannel extends EventEmitter {
+class SecureEphemeralMessagingChannel extends EventEmitter {
   constructor (secretKey) {
     super()
     this.secretKey = secretKey
@@ -39,7 +39,7 @@ class EphemeralMessagingChannel extends EventEmitter {
     if (watcher) {
       var peer = watcher.getPeer(remoteId)
       if (peer) {
-        return remoteSupports(peer, 'encrypted-ephemeral')
+        return remoteSupports(peer, 'secure-ephemeral')
       }
     }
     return false
@@ -61,7 +61,7 @@ class EphemeralMessagingChannel extends EventEmitter {
     }
   }
 }
-exports.EphemeralMessagingChannel = EphemeralMessagingChannel
+exports.SecureEphemeralMessagingChannel = SecureEphemeralMessagingChannel
 
 // internal
 // =
@@ -80,13 +80,13 @@ class DatabaseWatcher {
   send (remoteId, message = {}) {
     // get peer and assure support exists
     var peer = this.getPeer(remoteId)
-    if (!remoteSupports(peer, 'encrypted-ephemeral')) {
+    if (!remoteSupports(peer, 'secure-ephemeral')) {
       return
     }
 
     // send
     message = serialize(message, this.secretKey)
-    getPeerFeedStream(peer).extension('encrypted-ephemeral', message)
+    getPeerFeedStream(peer).extension('secure-ephemeral', message)
   }
 
   broadcast (message) {
@@ -127,21 +127,21 @@ class DatabaseWatcher {
   onPeerAdd (peer) {
     getPeerFeedStream(peer).on('extension', (type, codedMessage) => {
       // handle ephemeral messages only
-      if (type !== 'encrypted-ephemeral') return
+      if (type !== 'secure-ephemeral') return
 
       try {
         // Decode the message using protocol buffers.
-        const decodedMessage = encodings.EncryptedEphemeralMessage.decode(codedMessage)
+        const decodedMessage = encodings.SecureEphemeralMessage.decode(codedMessage)
         const nonce = decodedMessage.nonce
-        const encryptedMessage = decodedMessage.encryptedMessage
+        const ciphertext = decodedMessage.ciphertext
 
         if (nonce.length !== sodium.crypto_secretbox_NONCEBYTES) {
           throw new Error('Incorrect nonce length.')
         }
 
         // Decrypt the message using the secret key.
-        const message = Buffer.alloc(encryptedMessage.length - sodium.crypto_secretbox_MACBYTES)
-        sodium.crypto_secretbox_open_easy(message, encryptedMessage, nonce, this.secretKey)
+        const message = Buffer.alloc(ciphertext.length - sodium.crypto_secretbox_MACBYTES)
+        sodium.crypto_secretbox_open_easy(message, ciphertext, nonce, this.secretKey)
 
         // We expect JSON, parse it.
         const messageInUtf8 = message.toString('utf-8')
@@ -164,6 +164,8 @@ class DatabaseWatcher {
         // emit
         this.emitter.emit('message', this.database, peer, parsedMessage)
       } catch (e) {
+        // TODO: Improve this: we should return different errors based on specifics
+        // e.g., decryption failed, etc.
         this.emitter.emit('received-bad-message', e, this.database, peer/*, message*/)
       }
     })
@@ -181,19 +183,19 @@ function serialize (message, secretKey) {
   }
 
   const serialisedMessage = Buffer.from(JSON.stringify(message), 'utf-8')
-  const encryptedMessage = Buffer.alloc(serialisedMessage.length + sodium.crypto_secretbox_MACBYTES)
+  const ciphertext = Buffer.alloc(serialisedMessage.length + sodium.crypto_secretbox_MACBYTES)
   const nonce = Buffer.alloc(sodium.crypto_secretbox_NONCEBYTES)
 
   sodium.randombytes_buf(nonce)
-  sodium.crypto_secretbox_easy(encryptedMessage, serialisedMessage, nonce, secretKey)
+  sodium.crypto_secretbox_easy(ciphertext, serialisedMessage, nonce, secretKey)
 
   const messageToEncode = {
     nonce,
-    encryptedMessage
+    ciphertext
   }
 
   // Encode using protocol buffers.
-  return encodings.EncryptedEphemeralMessage.encode(messageToEncode)
+  return encodings.SecureEphemeralMessage.encode(messageToEncode)
 }
 
 function getPeerFeedStream (peer) {

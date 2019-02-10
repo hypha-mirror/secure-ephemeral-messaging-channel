@@ -10,31 +10,31 @@ var encodings = require('protocol-buffers-encodings')
 var varint = encodings.varint
 var skip = encodings.skip
 
-var EncryptedEphemeralMessage = exports.EncryptedEphemeralMessage = {
+var SecureEphemeralMessage = exports.SecureEphemeralMessage = {
   buffer: true,
   encodingLength: null,
   encode: null,
   decode: null
 }
 
-defineEncryptedEphemeralMessage()
+defineSecureEphemeralMessage()
 
-function defineEncryptedEphemeralMessage () {
+function defineSecureEphemeralMessage () {
   var enc = [
     encodings.bytes
   ]
 
-  EncryptedEphemeralMessage.encodingLength = encodingLength
-  EncryptedEphemeralMessage.encode = encode
-  EncryptedEphemeralMessage.decode = decode
+  SecureEphemeralMessage.encodingLength = encodingLength
+  SecureEphemeralMessage.encode = encode
+  SecureEphemeralMessage.decode = decode
 
   function encodingLength (obj) {
     var length = 0
     if (!defined(obj.nonce)) throw new Error("nonce is required")
     var len = enc[0].encodingLength(obj.nonce)
     length += 1 + len
-    if (!defined(obj.encryptedMessage)) throw new Error("encryptedMessage is required")
-    var len = enc[0].encodingLength(obj.encryptedMessage)
+    if (!defined(obj.ciphertext)) throw new Error("ciphertext is required")
+    var len = enc[0].encodingLength(obj.ciphertext)
     length += 1 + len
     return length
   }
@@ -47,9 +47,9 @@ function defineEncryptedEphemeralMessage () {
     buf[offset++] = 10
     enc[0].encode(obj.nonce, buf, offset)
     offset += enc[0].encode.bytes
-    if (!defined(obj.encryptedMessage)) throw new Error("encryptedMessage is required")
+    if (!defined(obj.ciphertext)) throw new Error("ciphertext is required")
     buf[offset++] = 18
-    enc[0].encode(obj.encryptedMessage, buf, offset)
+    enc[0].encode(obj.ciphertext, buf, offset)
     offset += enc[0].encode.bytes
     encode.bytes = offset - oldOffset
     return buf
@@ -62,7 +62,7 @@ function defineEncryptedEphemeralMessage () {
     var oldOffset = offset
     var obj = {
       nonce: null,
-      encryptedMessage: null
+      ciphertext: null
     }
     var found0 = false
     var found1 = false
@@ -82,7 +82,7 @@ function defineEncryptedEphemeralMessage () {
         found0 = true
         break
         case 2:
-        obj.encryptedMessage = enc[0].decode(buf, offset)
+        obj.ciphertext = enc[0].decode(buf, offset)
         offset += enc[0].decode.bytes
         found1 = true
         break

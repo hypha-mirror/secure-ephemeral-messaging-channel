@@ -3,7 +3,7 @@
 
 var tape = require('tape')
 var ram = require('random-access-memory')
-var { EphemeralMessagingChannel } = require('../../')
+var { SecureEphemeralMessagingChannel } = require('../../')
 
 module.exports = function (database) {
 
@@ -16,11 +16,11 @@ module.exports = function (database) {
 
   const secretKey = Buffer.from('2e4d36dc3c49049b450a3656188692a328df4b9cff11b6d95157fc21363a1b28', 'hex')
 
-  tape(`exchange ephemeral messages: ${databaseName}`, function (t) {
+  tape(`exchange secure ephemeral messages: ${databaseName}`, function (t) {
 
     // must use 2 instances to represent 2 different nodes
-    var srcEphemeral = new EphemeralMessagingChannel(secretKey)
-    var cloneEphemeral = new EphemeralMessagingChannel(secretKey)
+    var srcEphemeral = new SecureEphemeralMessagingChannel(secretKey)
+    var cloneEphemeral = new SecureEphemeralMessagingChannel(secretKey)
 
     var src = database(ram)
     var clone
@@ -30,7 +30,7 @@ module.exports = function (database) {
 
     // Isomorphic interface to support hypercore, hyperdb, and hyperdrive.
     // The three packages have slightly different APIs that makes this necessary.
-    // TODO: open issue for unifying the interfaces.
+    // TODO: open issue at general Dat issue tracker for unifying the interfaces.
     var srcFeed = src.source || src.metadata || src
     var putFunction = isHyperdrive ? 'writeFile' : isHyperDB ? 'put' : 'append'
 
@@ -94,12 +94,12 @@ module.exports = function (database) {
       var stream1 = clone.replicate({
         id: Buffer.from('clone-stream'),
         live: true,
-        extensions: ['encrypted-ephemeral']
+        extensions: ['secure-ephemeral']
       })
       var stream2 = src.replicate({
         id: Buffer.from('src-stream'),
         live: true,
-        extensions: ['encrypted-ephemeral']
+        extensions: ['secure-ephemeral']
       })
       stream1.pipe(stream2).pipe(stream1)
 
@@ -161,7 +161,7 @@ module.exports = function (database) {
   })
 
   tape(`no peers causes no issue: ${databaseName}`, function (t) {
-    var ephemeral = new EphemeralMessagingChannel(secretKey)
+    var ephemeral = new SecureEphemeralMessagingChannel(secretKey)
 
     var src = database(ram)
     src.on('ready', function () {
@@ -174,8 +174,8 @@ module.exports = function (database) {
 
   tape(`fires received-bad-message: ${databaseName}`, function (t) {
     // must use 2 instances to represent 2 different nodes
-    var srcEphemeral = new EphemeralMessagingChannel(secretKey)
-    var cloneEphemeral = new EphemeralMessagingChannel(secretKey)
+    var srcEphemeral = new SecureEphemeralMessagingChannel(secretKey)
+    var cloneEphemeral = new SecureEphemeralMessagingChannel(secretKey)
 
     var src = database(ram)
     var srcFeed = src.source || src.metadata || src
@@ -203,12 +203,12 @@ module.exports = function (database) {
       var stream1 = clone.replicate({
         id: Buffer.from('clone-stream'),
         live: true,
-        extensions: ['encrypted-ephemeral']
+        extensions: ['secure-ephemeral']
       })
       var stream2 = src.replicate({
         id: Buffer.from('src-stream'),
         live: true,
-        extensions: ['encrypted-ephemeral']
+        extensions: ['secure-ephemeral']
       })
       stream1.pipe(stream2).pipe(stream1)
 
@@ -227,7 +227,7 @@ module.exports = function (database) {
           t.ok(cloneEphemeral.hasSupport(clone, cloneFeed.peers[0]), 'clone has support')
 
           // send bad message
-          srcFeed.peers[0].stream.extension('encrypted-ephemeral', Buffer.from([0,1,2,3]))
+          srcFeed.peers[0].stream.extension('secure-ephemeral', Buffer.from([0,1,2,3]))
         })
       }
     }

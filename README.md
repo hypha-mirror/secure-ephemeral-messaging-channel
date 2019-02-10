@@ -15,11 +15,11 @@ If you update the _schema.proto_, you must run `npm run protobuf` to generate th
 ## Usage
 
 ```js
-const { EphemeralMessagingChannel } = require('@hypha/ephemeral-messaging-channel')
+const { SecureEphemeralMessagingChannel } = require('@hypha/secure-ephemeral-messaging-channel')
 
 // Create the channel, passing in the global signing secret key.
 // (The channel will derive a separate secret key from it to use for symetric encryption.)
-const ephemeralMessagingChannel = new EphemeralMessagingChannel(secretKey)
+const secureEphemeralMessagingChannel = new SecureEphemeralMessagingChannel(secretKey)
 
 // Create a database (hypercore, hyperdb, or hyperdrive instance)
 const db = hyperdb(filename => ram(filename))
@@ -27,17 +27,17 @@ const db = hyperdb(filename => ram(filename))
 //
 // Create your event handlers.
 //
-ephemeralMessagingChannel.on('message', (database, peer, messageObject) => {
+secureEphemeralMessagingChannel.on('message', (database, peer, messageObject) => {
   // `peer` has sent `payload` of mimetype `contentType` for `database`
 })
 
-ephemeralMessagingChannel.on('received-bad-message', (err, database, peer, messageBuffer) => {
+secureEphemeralMessagingChannel.on('received-bad-message', (err, database, peer) => {
   // there was an error parsing a received message
 })
 
 
 // Add the database to the ephemeral messaging channel.
-ephemeralMessagingChannel.addDatabase(db)
+secureEphemeralMessagingChannel.addDatabase(db)
 
 // Register the ‘encrypted-ephemeral’ extension in your replication streams.
 const webSwarm = swarm(signalhub(discoveryKey, ['https://localhost:444']))
@@ -46,7 +46,7 @@ webSwarm.on('peer', function (remoteWebStream) {
   // Create the local replication stream.
   const localReplicationStream = db.replicate({
     live: true,
-    extensions: ['encrypted-ephemeral']
+    extensions: ['secure-ephemeral']
   })
 
   // Start replicating.
@@ -61,7 +61,7 @@ webSwarm.on('peer', function (remoteWebStream) {
 })
 
 // Use the API
-datEphemeralExtMsg.hasSupport(database, peerId)
-datEphemeralExtMsg.broadcast(database, messageObject)
-datEphemeralExtMsg.send(database, peerId, messageObject)
+secureEphemeralMessagingChannel.hasSupport(database, peerId)
+secureEphemeralMessagingChannel.broadcast(database, messageObject)
+secureEphemeralMessagingChannel.send(database, peerId, messageObject)
 ```

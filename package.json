@@ -24,7 +24,8 @@
   },
   "homepage": "https://github.com/beakerbrowser/dat-ephemeral-ext-msg#readme",
   "dependencies": {
-    "protocol-buffers-encodings": "^1.1.0"
+    "protocol-buffers-encodings": "^1.1.0",
+    "sodium-universal": "^2.0.0"
   },
   "devDependencies": {
     "hypercore": "^6.24.0",

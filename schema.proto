@@ -1,3 +1,4 @@
-message EphemeralMessage {
-  required bytes encryptedMessage = 1;
+message EncryptedEphemeralMessage {
+  required bytes nonce = 1;
+  required bytes encryptedMessage = 2;
 }

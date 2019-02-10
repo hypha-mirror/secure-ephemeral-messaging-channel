@@ -26,7 +26,8 @@ Encrypted-ephemeral messages can be sent at any time after the connection is est
 
 ```
 message EncryptedEphemeralMessage {
-  required bytes encryptedMessage = 1;
+  required bytes nonce = 1;
+  required bytes encryptedMessage = 2;
 }
 ```
 

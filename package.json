@@ -1,7 +1,7 @@
 {
-  "name": "@hypha/ephemeral-messaging-channel",
-  "version": "1.0.2",
-  "description": "Symmetrically-encrypted ephemeral messaging channel over hypercore protocol for hypercore, hyperdb, and hyperdrive.",
+  "name": "@hypha/secure-ephemeral-messaging-channel",
+  "version": "1.0.0",
+  "description": "Symmetrically-encrypted authenticated ephemeral messaging channel over hypercore protocol for hypercore, hyperdb, and hyperdrive.",
   "main": "index.js",
   "scripts": {
     "test": "tape test/*.js",
@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://source.ind.ie/hypha/ephemeral-messaging-channel.git"
+    "url": "git+https://source.ind.ie/hypha/secure-ephemeral-messaging-channel.git"
   },
   "keywords": [
     "dat",
@@ -17,12 +17,11 @@
     "message",
     "ephemeral"
   ],
-  "author": "Paul Frazee <pfrazee@gmail.com>",
-  "license": "MIT",
+  "license": "AGPLv3",
   "bugs": {
-    "url": "https://github.com/beakerbrowser/dat-ephemeral-ext-msg/issues"
+    "url": "https://github.com/hypha-mirror/secure-ephemeral-messaging-channel/issues"
   },
-  "homepage": "https://github.com/beakerbrowser/dat-ephemeral-ext-msg#readme",
+  "homepage": "https://github.com/hypha-mirror/secure-ephemeral-messaging-channel#readme",
   "dependencies": {
     "protocol-buffers-encodings": "^1.1.0",
     "sodium-universal": "^2.0.0"

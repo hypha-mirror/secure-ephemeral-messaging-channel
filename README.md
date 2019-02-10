@@ -1,10 +1,8 @@
-# @hypha/ephemeral-messaging-channel
+# @hypha/secure-ephemeral-messaging-channel
 
-## __Work In Progress: DO NOT USE!__
+Adds a symmetrically-encrypted authenticated messaging channel between nodes for the same database ([hypercore](https://github.com/mafintosh/hypercore), [hyperdb](https://github.com/mafintosh/hyperdb), or [hyperdrive](https://github.com/mafintosh/hyperdrive)). Currently used in Hypha to provide a secure ephemeral messaging channel between nodes owned by the same person for the purpose of authorising new nodes.
 
-Adds a symmetrically-encrypted and authenticated messaging channel between nodes for the same database (hypercore, hyperdb, or hyperdrive). Currently used in Hypha to provide a secure ephemeral messaging channel between nodes owned by the same person for the purpose of authorising new nodes.
-
-Based on from [dat-ephemeral-ext-msg](https://github.com/beakerbrowser/dat-ephemeral-ext-msg) by [Paul Frazee](https://pfrazee.hashbase.io/).
+Based on [dat-ephemeral-ext-msg](https://github.com/beakerbrowser/dat-ephemeral-ext-msg) by [Paul Frazee](https://pfrazee.hashbase.io/).
 
 ## Setup
 

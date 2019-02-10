@@ -1,10 +1,20 @@
 # @hypha/ephemeral-messaging-channel
 
-__WIP: DO NOT USE__
+## __Work In Progress: DO NOT USE!__
 
 Adds a symmetrically-encrypted and authenticated messaging channel between nodes for the same database (hypercore, hyperdb, or hyperdrive). Currently used in Hypha to provide a secure ephemeral messaging channel between nodes owned by the same person for the purpose of authorising new nodes.
 
 Based on from [dat-ephemeral-ext-msg](https://github.com/beakerbrowser/dat-ephemeral-ext-msg) by [Paul Frazee](https://pfrazee.hashbase.io/).
+
+## Setup
+
+If you update the _schema.proto_, you must run `npm run protobuf` to generate the _encodings.js_ file again. See [protocol-buffers](https://github.com/mafintosh/protocol-buffers) for more details.
+
+## Spec
+
+[A spec](spec.md) based on Dep-0000 is available. This has not been submitted anywhere yet.
+
+## Usage
 
 ```js
 const { EphemeralMessagingChannel } = require('@hypha/ephemeral-messaging-channel')

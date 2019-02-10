@@ -1,4 +1,3 @@
 message EphemeralMessage {
-  optional string contentType = 1;
-  required bytes payload = 2;
+  required bytes encryptedMessage = 1;
 }

@@ -1,9 +1,9 @@
-# "Ephemeral" Extension Message spec
+# Encrypted Ephemeral Extension Message Specification
 
 # Summary
 [summary]: #summary
 
-This spec defines the non-standard `ephemeral` extension message used in the Dat replication protocol. This message provides a way to send arbitrary application data to a peer through an existing connection.
+This spec defines the non-standard `encrypted-ephemeral` extension message used in the Dat replication protocol. This message provides a way to send arbitrary application data to a peer through an existing connection.
 
 
 # Motivation
@@ -11,55 +11,51 @@ This spec defines the non-standard `ephemeral` extension message used in the Dat
 
 While Dat is effective at sharing persistent datasets, applications frequently need to transmit extra information which does not need to persist. This kind of information is known as "ephemeral." Examples include: sending chat messages, proposing changes to a dat, alerting peers to events, broadcasting identity information, and sharing the URLs of related datasets.
 
-This spec was motivated by the need for a quick solution to these use-cases. It establishes a mechanism for sending ephemeral messages over existing Dat connections. At time of writing, it is unclear whether this mechanism will be used in the long-term, or superseded by a more flexible messaging channel.
+This spec is based on the [Dep-0000 Ephemeral Message (Extension Message) spec](https://github.com/beakerbrowser/dat-ephemeral-ext-msg/blob/master/spec.md) which was motivated by the need for a quick solution to these use-cases. That spec establishes a mechanism for sending ephemeral messages over existing Dat connections. This spec diverges from Dep-0000 in three major ways:
 
-A specific use case for this extension is to enable a new Web API which will expose peer message-passing channels to in-browser applications. Such an API would restrict access so that the application code of a `dat://` site will only be able to send ephemeral messages on connections related to its own content.
-
+1. It narrows the scope of recipients to nodes owned by the same person.
+2. It reduces the schema to a single, symmetrically-encrypted field.
+3. Limits the structure of the unencrypted message to JSON.
 
 # Reference Documentation
 [reference-documentation]: #reference-documentation
 
-This spec is implemented using the Dat replication protocol's "extension messages." In order to broadcast support for this spec, a client should declare the `'ephemeral'` extension in the replication handshake.
+This spec is implemented using the Dat replication protocol's "extension messages." In order to broadcast support for this spec, a client should declare the `'encrypted-ephemeral'` extension in the replication handshake.
 
-Ephemeral messages can be sent at any time after the connection is established by sending an extension message of type `'ephemeral'`. The message payload is a protobuf with the following schema:
+Encrypted-ephemeral messages can be sent at any time after the connection is established by sending an extension message of type `'encrypted-ephemeral'`. The message payload is a protobuf with the following schema:
 
 ```
-message EphemeralMessage {
-  optional string contentType = 1;
-  required bytes payload = 2;
+message EncryptedEphemeralMessage {
+  required bytes encryptedMessage = 1;
 }
 ```
 
-The `contentType` string should provide a valid MIME type. If none is specified, the encoding should be considered `application/octet-stream`.
+There is no dictated structure for the unencrypted message.
+
+The message is encrypted using `secretbox_easy` from _sodium-universal_ package. That function currently uses the XSalsa20 stream cipher for encryption and a Poly1305 MAC for authentication.
 
 The client may respond to the message by emitting an event, so that it may be handled by the client's application logic. No acknowledgment of receipt will be provided (no "ACK").
-
-It's suggested that an encoded `EphemeralMessage` should be no larger than 2kb, to avoid creating too much work for the receiving peer to handle.
 
 
 # Privacy, security, and reliability
 [privacy-security-and-reliability]: #privacy-security-and-reliability
 
-Users of ephemeral messages should be conscious of the privacy, security, and reliability properties of the channel. Ephemeral messages are designed to be a minimal stopgap solution while better solutions are developed. This "minimal design" is reflected by the limited privacy, security, and reliability.
+The Dat messaging channel is encrypted using the public key of the first hypercore to be exchanged over the channel. As a result, all traffic can be decrypted and/or modified by an intermediary which possesses the public key. Encrypted ephemeral messages are further authenticated and encrypted with a secret key derived from the secret key of the first hypercore.
 
-At time of writing, the Dat messaging channel is encrypted using the public key of the first hypercore to be exchanged over the channel. As a result, all traffic can be decrypted and/or modified by an intermediary which possesses the public key. For typical hypercore messages, the ability to modify the messages is a non-issue because all hypercore data is authenticated. Ephemeral messages however have no authentication, and may be modified or monitored by an intermediary.
+Encrypted ephemeral messages thus can only be decrypted by holders of the secret key of the original hypercore.
 
-Applications using the ephemeral message should not assume any privacy, nor should they trust that a peer is "who they say they are."
-
-Applications should also not assume connectivity will occur between all peers who have "joined the swarm" for a hypercore. There are many factors which may cause a peer not to connect: failed NAT traversal, the client running out of available sockets, or even the intentional blocking of a peer by the discovery network.
+Applications should also not assume connectivity will occur between all peers that have "joined the swarm" for a hypercore. There are many factors which may cause a peer not to connect: failed NAT traversal, the client running out of available sockets, or even the intentional blocking of a peer by the discovery network.
 
 
 # Drawbacks
 [drawbacks]: #drawbacks
 
-- This spec may present privacy concerns, as it may be used to track users in a similar fashion to HTTP Cookies, or be used to exfiltrate data.
-- The payload of the `'ephemeral'` message is not authenticated in any way. The lack of trust must be considered by applications which leverage the data.
-- If the recipient of the `'ephemeral'` message is not authenticated (as is currently the case in all Dat replication connections) the client will not know who is receiving the payload and may broadcast sensitive information.
-
+- The approach and implementation of this spec should be reviewed by the community and by cryptographers.
 
 # Changelog
 [changelog]: #changelog
 
+- 2019-02-10: Update to reflect changes in encrypted ephemeral fork
 - 2018-07-02: Add "Privacy, security, and reliability" section
 - 2018-06-20: Add a size-limit suggestion
 - 2018-06-10: Change the payload encoding to protobuf and provide a more flexible content-type field.

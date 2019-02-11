@@ -4,6 +4,8 @@ Adds a symmetrically-encrypted authenticated messaging channel between nodes for
 
 Messages are encrypted using the `secretbox_easy` function from the _sodium-universal_ package. This currently uses the XSalsa20 stream cipher for encryption and a Poly1305 MAC for authentication.
 
+Also supports unprivileged nodes as relays. In Hypha, for example, your always-on node is an unprivileged node (it does not have your passphrase or the secret keys derived from it). Unprivileged nodes can pass on messages but they cannot decrypt them.
+
 This module is based on [dat-ephemeral-ext-msg](https://github.com/beakerbrowser/dat-ephemeral-ext-msg) by [Paul Frazee](https://pfrazee.hashbase.io/).
 
 ## Setup
@@ -21,6 +23,7 @@ const { SecureEphemeralMessagingChannel } = require('@hypha/secure-ephemeral-mes
 
 // Create the channel, passing in the global signing secret key.
 // (In Hypha, this is deterministically derived from the owner’s passphrase.)
+// On unprivileged nodes, instantiate the channel without passing a secret key.
 const secureEphemeralMessagingChannel = new SecureEphemeralMessagingChannel(secretKey)
 
 // Create a database (hypercore, hyperdb, or hyperdrive instance)
@@ -29,6 +32,9 @@ const db = hyperdb(filename => ram(filename))
 //
 // Create your event handlers.
 //
+// Note: on unprivileged nodes, event handles will not get called. You instantiate the
+// ===== messaging channel and it automatically relays received messages to all nodes.
+//
 secureEphemeralMessagingChannel.on('message', (database, peer, messageObject) => {
   // `peer` has sent `payload` of mimetype `contentType` for `database`
 })
@@ -36,7 +42,6 @@ secureEphemeralMessagingChannel.on('message', (database, peer, messageObject) =>
 secureEphemeralMessagingChannel.on('received-bad-message', (err, database, peer) => {
   // there was an error parsing a received message
 })
-
 
 // Add the database to the ephemeral messaging channel.
 secureEphemeralMessagingChannel.addDatabase(db)

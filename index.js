@@ -145,10 +145,10 @@ class DatabaseWatcher {
         // as it does not have the secret key. Instead, it should act as a
         // relay and re-broadcast received messages to other nodes.
 
-        // // Decode the message using protocol buffers and emit a relay message.
-        // // Useful for debugging. We can disable this in production to reduce load.
-        // const decodedMessage = encodings.SecureEphemeralMessage.decode(codedMessage)
-        // this.emitter.emit('relay', decodedMessage)
+        // Decode the message using protocol buffers and emit a relay message.
+        // Useful for debugging. We can disable this in production to reduce load.
+        const decodedMessage = encodings.SecureEphemeralMessage.decode(codedMessage)
+        this.emitter.emit('relay', decodedMessage)
 
         this.broadcast(codedMessage, /* serialise = */ false)
         return

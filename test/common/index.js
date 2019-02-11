@@ -232,4 +232,89 @@ module.exports = function (database) {
       }
     }
   })
+
+  tape(`unprivileged nodes acts as relay: ${databaseName}`, function (t) {
+
+    var srcEphemeral = new SecureEphemeralMessagingChannel(secretKey)
+
+    // The clone ephemeral is an unprivileged node.
+    var cloneEphemeral = new SecureEphemeralMessagingChannel()
+
+    var src = database(ram)
+    var srcFeed = src.source || src.metadata || src
+    var clone
+    var cloneFeed
+
+    src.on('ready', function () {
+      // generate clone instance
+      clone = database(ram, src.key)
+      cloneFeed = clone.source || clone.metadata || clone
+      clone.on('ready', startReplication)
+    })
+
+    function startReplication () {
+      // wire up archives
+      srcEphemeral.addDatabase(src)
+      cloneEphemeral.addDatabase(clone)
+
+      // The source should get its own message relayed back from
+      // the unprivileged node.
+      srcEphemeral.on ('message', (archive, peer, message) => {
+        t.ok(archive === src, 'message is relayed from the unprivileged node')
+        t.same(JSON.stringify(message), '{"message":"regular-send"}', 'message relayed correctly')
+        t.end()
+      })
+
+      // // The clone node is unprivileged. It should get a relay message.
+      // cloneEphemeral.on ('relay', (decodedMessage) => {
+      //   console.log('Relay handler', decodedMessage)
+      // })
+
+      // start replication
+      var stream1 = clone.replicate({
+        id: Buffer.from('clone-stream'),
+        live: true,
+        extensions: ['secure-ephemeral']
+      })
+
+      var stream2 = src.replicate({
+        id: Buffer.from('src-stream'),
+        live: true,
+        extensions: ['secure-ephemeral']
+      })
+
+      stream1.pipe(stream2).pipe(stream1)
+
+      // wait for handshakes
+      var handshakeCount = 0
+      stream1.on('handshake', gotHandshake)
+      stream2.on('handshake', gotHandshake)
+
+      function gotHandshake () {
+        if (++handshakeCount !== 2) return
+
+        // We need to do this on the next tick to give clone’s peers a chance to populate.
+        process.nextTick(() => {
+          // Check that the streams have support for the protocol extension.
+          t.ok(srcEphemeral.hasSupport(src, srcFeed.peers[0]), 'src has support')
+          t.ok(cloneEphemeral.hasSupport(clone, cloneFeed.peers[0]), 'clone has support')
+
+          // The source feed is privileged and can send messages.
+          srcEphemeral.send(src, srcFeed.peers[0], {message:'regular-send'})
+
+          try {
+            cloneEphemeral.send(clone, cloneFeed.peers[0], {message: 'unprivileged-send-attempt'})
+          } catch (error) {
+            t.ok(error instanceof Error, 'send attempt from unprivileged node resulted in error')
+          }
+
+          try {
+            cloneEphemeral.broadcast({message: 'unprivileged-broadcast-attempt'})
+          } catch (error) {
+            t.ok(error instanceof Error, 'broadcast attempt from unprivileged node resulted in error')
+          }
+        })
+      }
+    }
+  })
 }

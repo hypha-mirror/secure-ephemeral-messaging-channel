@@ -47,6 +47,12 @@ class SecureEphemeralMessagingChannel extends EventEmitter {
 
   // send a message to a peer
   send (database, remoteId, message) {
+
+    // Check that this node can send messages.
+    if (this.secretKey === undefined) {
+      throw new Error('Unprivileged nodes cannot send messages.')
+    }
+
     var {watcher} = this.getWatcher(database)
     if (watcher) {
       return watcher.send(remoteId, message)
@@ -55,6 +61,12 @@ class SecureEphemeralMessagingChannel extends EventEmitter {
 
   // send a message to all peers
   broadcast (database, message) {
+
+    // Check that this node can broadcast messages.
+    if (this.secretKey === undefined) {
+      throw new Error('Unprivileged nodes cannot broadcast messages.')
+    }
+
     var {watcher} = this.getWatcher(database)
     if (watcher) {
       return watcher.broadcast(message)
@@ -63,10 +75,9 @@ class SecureEphemeralMessagingChannel extends EventEmitter {
 }
 exports.SecureEphemeralMessagingChannel = SecureEphemeralMessagingChannel
 
-// internal
-// =
+// Private.
 
-// helper class to track individual dats
+// Helper class to track individual databases.
 class DatabaseWatcher {
   constructor (database, emitter, secretKey) {
     this.database = database
@@ -77,23 +88,23 @@ class DatabaseWatcher {
     this.onPeerRemove = this.onPeerRemove.bind(this)
   }
 
-  send (remoteId, message = {}) {
-    // get peer and assure support exists
+  send (remoteId, message = {}, serialise = true) {
+    // Get peer and assure support exists for the protocol extension.
     var peer = this.getPeer(remoteId)
     if (!remoteSupports(peer, 'secure-ephemeral')) {
       return
     }
 
-    // send
-    message = serialize(message, this.secretKey)
+    message = serialise ? _serialise(message, this.secretKey) : message
+
     getPeerFeedStream(peer).extension('secure-ephemeral', message)
   }
 
-  broadcast (message) {
-    // send to all peers
+  broadcast (message, serialise = true) {
+    // Send to all peers.
     var peers = this.hypercore.peers
     for (let i = 0; i < peers.length; i++) {
-      this.send(peers[i], message)
+      this.send(peers[i], message, serialise)
     }
   }
 
@@ -129,6 +140,20 @@ class DatabaseWatcher {
       // handle ephemeral messages only
       if (type !== 'secure-ephemeral') return
 
+      if (this.secretKey === undefined) {
+        // This is an unprivileged node. It cannot decrypt received messages
+        // as it does not have the secret key. Instead, it should act as a
+        // relay and re-broadcast received messages to other nodes.
+
+        // // Decode the message using protocol buffers and emit a relay message.
+        // // Useful for debugging. We can disable this in production to reduce load.
+        // const decodedMessage = encodings.SecureEphemeralMessage.decode(codedMessage)
+        // this.emitter.emit('relay', decodedMessage)
+
+        this.broadcast(codedMessage, /* serialise = */ false)
+        return
+      }
+
       try {
         // Decode the message using protocol buffers.
         const decodedMessage = encodings.SecureEphemeralMessage.decode(codedMessage)
@@ -163,10 +188,10 @@ class DatabaseWatcher {
 
         // emit
         this.emitter.emit('message', this.database, peer, parsedMessage)
-      } catch (e) {
+      } catch (error) {
         // TODO: Improve this: we should return different errors based on specifics
         // e.g., decryption failed, etc.
-        this.emitter.emit('received-bad-message', e, this.database, peer/*, message*/)
+        this.emitter.emit('received-bad-message', error, this.database, peer/*, message*/)
       }
     })
   }
@@ -176,7 +201,7 @@ class DatabaseWatcher {
   }
 }
 
-function serialize (message, secretKey) {
+function _serialise (message, secretKey) {
   // Message should be an object
   if (typeof message !== 'object') {
     throw new Error('Message must be an object.')
